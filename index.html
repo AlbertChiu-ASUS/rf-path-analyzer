@@ -10,10 +10,10 @@
 <body>
 <div class="container">
   <div class="card">
-    <h1>RF Path Analyzer <span>GitHub Pages V4 DEM</span></h1>
+    <h1>RF Path Analyzer <span>GitHub Pages V5.1 Smart Height</span></h1>
     <p class="note">
       第一個座標點為 <b>STA</b>，第二個座標點為 <b>AP</b>。
-      這版會透過 Open‑Meteo Elevation API 取得路徑高程，產生實際地形剖面。
+      這版會透過 Open‑Meteo Elevation API 取得路徑高程，並自動建議 STA/AP 天線需加高多少。
     </p>
 
     <div id="map"></div>
@@ -109,6 +109,11 @@
       </thead>
       <tbody id="freqTable"></tbody>
     </table>
+  </div>
+
+  <div class="card" id="recommendCard" style="display:none;">
+    <h2>Smart Height Recommendation</h2>
+    <div id="heightRecommendation" class="recommendation"></div>
   </div>
 
   <div class="card" id="chartCard" style="display:none;">

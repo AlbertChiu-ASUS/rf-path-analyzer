@@ -201,6 +201,34 @@ function setBusy(isBusy, msg = "") {
   status.textContent = msg;
 }
 
+
+function calculateSmartHeightRecommendation(rows) {
+  // rows contain min clearance for each frequency.
+  // If worst clearance >= 0, no extra height needed.
+  let worst = null;
+
+  rows.forEach(r => {
+    if (worst === null || r.min < worst.min) {
+      worst = r;
+    }
+  });
+
+  const need = worst.min < 0 ? Math.abs(worst.min) : 0;
+
+  // Approximate practical guidance:
+  // Adding the same height to both endpoints lifts the full LOS by that height everywhere.
+  // Adding height to only one endpoint has position-dependent effect, so as a conservative
+  // simple estimate, use 2x the worst deficit for single-side-only fixes.
+  return {
+    worstFreq: worst.freq,
+    worstClearance: worst.min,
+    bothSidesEach: need,
+    staOnly: need * 2,
+    apOnly: need * 2,
+    status: need <= 0 ? "PASS" : "NEED_HEIGHT"
+  };
+}
+
 async function analyze() {
   const sta = parseCoord(staCoord.value);
   const ap = parseCoord(apCoord.value);
@@ -356,6 +384,57 @@ async function analyze() {
       </tr>
     `).join("");
 
+    const reco = calculateSmartHeightRecommendation(rows);
+    document.getElementById("recommendCard").style.display = "block";
+
+    if (reco.status === "PASS") {
+      document.getElementById("heightRecommendation").innerHTML = `
+        <div class="reco-box">
+          <b>Overall</b>
+          <div class="reco-value pass">PASS</div>
+        </div>
+        <div class="reco-box">
+          <b>Worst Frequency</b>
+          <div class="reco-value">${reco.worstFreq} MHz</div>
+        </div>
+        <div class="reco-box">
+          <b>Worst Clearance</b>
+          <div class="reco-value pass">${reco.worstClearance.toFixed(2)} m</div>
+        </div>
+        <div class="reco-box">
+          <b>Extra Height Needed</b>
+          <div class="reco-value pass">0 m</div>
+        </div>
+        <div class="reco-note" style="grid-column:1/-1;">
+          目前所有勾選頻率皆通過 60% Fresnel clearance。暫不需要額外增加 STA/AP 天線高度。
+        </div>
+      `;
+    } else {
+      document.getElementById("heightRecommendation").innerHTML = `
+        <div class="reco-box">
+          <b>Worst Frequency</b>
+          <div class="reco-value fail">${reco.worstFreq} MHz</div>
+        </div>
+        <div class="reco-box">
+          <b>Current Worst Clearance</b>
+          <div class="reco-value fail">${reco.worstClearance.toFixed(2)} m</div>
+        </div>
+        <div class="reco-box">
+          <b>STA + AP 平均分攤</b>
+          <div class="reco-value">${reco.bothSidesEach.toFixed(1)} m each</div>
+        </div>
+        <div class="reco-box">
+          <b>單邊加高估算</b>
+          <div class="reco-value">${reco.staOnly.toFixed(1)} m</div>
+        </div>
+        <div class="reco-note" style="grid-column:1/-1;">
+          建議解讀：最差頻率為 ${reco.worstFreq} MHz，目前最小淨空為 ${reco.worstClearance.toFixed(2)} m。
+          若 STA 與 AP 兩端一起加高，初步可抓兩端各增加 ${reco.bothSidesEach.toFixed(1)} m。
+          若只想加高單邊，先用保守估算約 ${reco.staOnly.toFixed(1)} m；實際最佳加高位置會依最差遮擋點靠近 STA 或 AP 而不同。
+        </div>
+      `;
+    }
+
     if (chart) chart.destroy();
 
     chart = new Chart(document.getElementById("profileChart").getContext("2d"), {
@@ -376,7 +455,7 @@ async function analyze() {
     });
 
     redrawMap();
-    setBusy(false, "完成。");
+    setBusy(false, "完成。已產生 Smart Height Recommendation。");
   } catch (err) {
     setBusy(false, "");
     alert("分析失敗：" + err.message);

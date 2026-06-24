@@ -194,3 +194,41 @@ canvas {
     grid-template-columns: 1fr;
   }
 }
+
+
+.recommendation {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.reco-box {
+  background: #f7f9fb;
+  border: 1px solid #e1e6eb;
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.reco-box b {
+  display: block;
+  color: #555;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.reco-value {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.reco-note {
+  margin-top: 14px;
+  color: #666;
+  line-height: 1.6;
+}
+
+@media(max-width:900px) {
+  .recommendation {
+    grid-template-columns: 1fr;
+  }
+}
