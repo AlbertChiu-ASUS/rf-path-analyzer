@@ -284,3 +284,12 @@ canvas {
     grid-template-columns: 1fr;
   }
 }
+
+
+#profileChart {
+  background: #ffffff;
+}
+
+.chart-note {
+  color: #555;
+}

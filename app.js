@@ -11,6 +11,22 @@ let pathLine = null;
 let clickStep = 0;
 let chart = null;
 
+const freqColors = {
+  "433": "#8E44AD",
+  "868": "#16A085",
+  "915": "#0072B2",
+  "978": "#D4AC0D",
+  "1090": "#E67E22",
+  "2400": "#C0392B",
+  "5825": "#111111"
+};
+
+function getFreqColor(freq) {
+  const key = String(Math.round(freq));
+  return freqColors[key] || "#7F8C8D";
+}
+
+
 const staCoord = document.getElementById("staCoord");
 const apCoord = document.getElementById("apCoord");
 
@@ -430,9 +446,11 @@ async function analyze() {
       datasets.push({
         label: `60% Fresnel Lower Edge @ ${freq} MHz`,
         data: lower,
-        borderWidth: 2,
+        borderWidth: 2.2,
         pointRadius: 0,
-        borderDash: [8, 4]
+        borderDash: [8, 4],
+        borderColor: getFreqColor(freq),
+        backgroundColor: getFreqColor(freq)
       });
 
       const budget = linkBudget(freq, D);
@@ -456,7 +474,9 @@ async function analyze() {
         borderWidth: 0,
         pointRadius: 7,
         pointHoverRadius: 9,
-        showLine: false
+        showLine: false,
+        borderColor: "#FF8C00",
+        backgroundColor: "#FF8C00"
       });
     }
 
@@ -554,12 +574,67 @@ async function analyze() {
       options: {
         responsive: true,
         interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: {
+            labels: {
+              color: "#111111",
+              font: {
+                size: 13,
+                weight: "600"
+              }
+            }
+          }
+        },
         scales: {
           x: {
-            title: { display: true, text: "Distance from STA to AP (km)" }
+            title: {
+              display: true,
+              text: "Distance from STA to AP (km)",
+              color: "#111111",
+              font: {
+                size: 14,
+                weight: "700"
+              }
+            },
+            ticks: {
+              color: "#111111",
+              font: {
+                size: 12,
+                weight: "600"
+              }
+            },
+            grid: {
+              color: "rgba(120, 120, 120, 0.18)",
+              lineWidth: 1
+            },
+            border: {
+              color: "#333333"
+            }
           },
           y: {
-            title: { display: true, text: "Height (m)" }
+            title: {
+              display: true,
+              text: "Height (m)",
+              color: "#111111",
+              font: {
+                size: 14,
+                weight: "700"
+              }
+            },
+            ticks: {
+              color: "#111111",
+              font: {
+                size: 12,
+                weight: "600"
+              }
+            },
+            grid: {
+              color: "rgba(120, 120, 120, 0.18)",
+              lineWidth: 1
+            },
+            border: {
+              color: "#333333"
+            }
           }
         }
       }
