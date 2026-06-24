@@ -10,26 +10,55 @@
 <body>
 <div class="container">
   <div class="card">
-    <h1>RF Path Analyzer <span>GitHub Pages V1</span></h1>
-    <p class="note">第一個座標點為 <b>STA</b>，第二個座標點為 <b>AP</b>。可手動輸入座標，也可以在地圖上點兩下設定 STA / AP。</p>
+    <h1>RF Path Analyzer <span>GitHub Pages V4 DEM</span></h1>
+    <p class="note">
+      第一個座標點為 <b>STA</b>，第二個座標點為 <b>AP</b>。
+      這版會透過 Open‑Meteo Elevation API 取得路徑高程，產生實際地形剖面。
+    </p>
+
     <div id="map"></div>
-    <div class="map-help">地圖操作：第一次點擊設定 <b>STA</b>，第二次點擊設定 <b>AP</b>。第三次點擊會重新從 STA 開始設定。</div>
+    <div class="map-help">
+      地圖操作：第一次點擊設定 <b>STA</b>，第二次點擊設定 <b>AP</b>。第三次點擊會重新從 STA 開始設定。
+    </div>
   </div>
 
   <div class="card">
     <h2>Input</h2>
+
     <div class="grid2">
-      <div><label>STA 座標 Lat, Lon</label><input id="staCoord" value="25.106097, 121.922228"></div>
-      <div><label>AP 座標 Lat, Lon</label><input id="apCoord" value="25.014412, 122.004296"></div>
+      <div>
+        <label>STA 座標 Lat, Lon</label>
+        <input id="staCoord" value="25.106097, 121.922228">
+      </div>
+      <div>
+        <label>AP 座標 Lat, Lon</label>
+        <input id="apCoord" value="25.014412, 122.004296">
+      </div>
     </div>
-    <div class="grid4">
-      <div><label>STA 地面海拔 m</label><input id="staGround" type="number" value="67" step="0.1"></div>
-      <div><label>AP 地面海拔 m</label><input id="apGround" type="number" value="0" step="0.1"></div>
-      <div><label>STA 天線離地高度 m</label><input id="staAgl" type="number" value="2" step="0.1"></div>
-      <div><label>AP 天線離地高度 m</label><input id="apAgl" type="number" value="2" step="0.1"></div>
+
+    <div class="grid3">
+      <div>
+        <label>STA 天線離地高度 m</label>
+        <input id="staAgl" type="number" value="2" step="0.1">
+      </div>
+      <div>
+        <label>AP 天線離地高度 m</label>
+        <input id="apAgl" type="number" value="2" step="0.1">
+      </div>
+      <div>
+        <label>DEM 取樣點數</label>
+        <select id="samples">
+          <option value="51">51 points</option>
+          <option value="101" selected>101 points</option>
+          <option value="151">151 points</option>
+          <option value="201">201 points</option>
+        </select>
+      </div>
     </div>
+
     <div class="grid2">
-      <div><label>Earth Refraction Model</label>
+      <div>
+        <label>Earth Refraction Model</label>
         <select id="kPreset" onchange="updateKFactor()">
           <option value="1.00">真空 / 無折射，K = 1.00</option>
           <option value="1.33" selected>標準大氣，K = 1.33</option>
@@ -38,7 +67,10 @@
           <option value="custom">Custom</option>
         </select>
       </div>
-      <div><label>K Factor</label><input id="kFactor" type="number" value="1.33" step="0.01"></div>
+      <div>
+        <label>K Factor</label>
+        <input id="kFactor" type="number" value="1.33" step="0.01">
+      </div>
     </div>
 
     <h2>Frequency Selection</h2>
@@ -51,26 +83,43 @@
       <label><input type="checkbox" class="freqCheck" value="2400">2400 MHz</label>
       <label><input type="checkbox" class="freqCheck" value="5825" checked>5825 MHz</label>
     </div>
+
     <label>Custom Frequencies MHz，可輸入多個，例如：1200, 5800</label>
     <input id="customFreqs" placeholder="1200, 5800">
 
-    <button onclick="analyze()">Analyze</button>
+    <button id="analyzeBtn" onclick="analyze()">Analyze</button>
     <button class="secondary" onclick="clearMapPoints()">Clear Map Points</button>
+    <div id="status" class="status"></div>
   </div>
 
   <div class="card" id="resultCard" style="display:none;">
     <h2>Result</h2>
     <div id="summary" class="summary"></div>
+
     <h2>Frequency Comparison</h2>
-    <table><thead><tr><th>Frequency</th><th>1st Fresnel Radius @ midpoint</th><th>60% Fresnel @ midpoint</th><th>Min Clearance</th><th>Result</th></tr></thead><tbody id="freqTable"></tbody></table>
+    <table>
+      <thead>
+      <tr>
+        <th>Frequency</th>
+        <th>1st Fresnel Radius @ midpoint</th>
+        <th>60% Fresnel @ midpoint</th>
+        <th>Min Clearance</th>
+        <th>Result</th>
+      </tr>
+      </thead>
+      <tbody id="freqTable"></tbody>
+    </table>
   </div>
 
   <div class="card" id="chartCard" style="display:none;">
     <h2>Path Profile</h2>
     <canvas id="profileChart"></canvas>
-    <p class="note">V1 為純 GitHub Pages 靜態版：不讀取 DEM，地形使用 STA/AP 地面海拔線性插值 + 地球曲率近似。</p>
+    <p class="note">
+      DEM 來源：Open‑Meteo Elevation API，使用 Copernicus DEM GLO‑90。海面或無資料點會以 0 m 處理。
+    </p>
   </div>
 </div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="app.js"></script>
