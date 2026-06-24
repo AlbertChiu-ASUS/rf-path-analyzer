@@ -207,6 +207,31 @@ function fsplDb(freqMHz, distanceKm) {
   return 32.44 + 20 * Math.log10(distanceKm) + 20 * Math.log10(freqMHz);
 }
 
+function parseMimoType(value) {
+  const parts = value.split("x");
+  return {
+    tx: parseInt(parts[0], 10),
+    rx: parseInt(parts[1], 10)
+  };
+}
+
+function isWifiFreq(freqMHz) {
+  return Math.abs(freqMHz - 2400) < 1 || Math.abs(freqMHz - 5825) < 1;
+}
+
+function mimoEnhance(freqMHz) {
+  const selected = document.getElementById("mimoType").value;
+  const mimo = isWifiFreq(freqMHz) ? parseMimoType(selected) : { tx: 1, rx: 1 };
+  const txEnhance = 10 * Math.log10(mimo.tx);
+  const rxEnhance = 10 * Math.log10(mimo.rx);
+  return {
+    mimoLabel: `${mimo.tx}x${mimo.rx}`,
+    txEnhance,
+    rxEnhance,
+    totalEnhance: txEnhance + rxEnhance
+  };
+}
+
 function linkBudget(freqMHz, distanceKm) {
   const txPower = parseFloat(document.getElementById("txPowerDbm").value);
   const staGain = parseFloat(document.getElementById("staAntGainDbi").value);
@@ -216,7 +241,17 @@ function linkBudget(freqMHz, distanceKm) {
   const targetMargin = parseFloat(document.getElementById("fadeMarginTargetDb").value);
 
   const fspl = fsplDb(freqMHz, distanceKm);
-  const rxPower = txPower + staGain + apGain - cableLoss - fspl;
+  const mimo = mimoEnhance(freqMHz);
+
+  const rxPower =
+    txPower +
+    staGain +
+    apGain +
+    mimo.txEnhance +
+    mimo.rxEnhance -
+    cableLoss -
+    fspl;
+
   const fadeMargin = rxPower - rxSensitivity;
 
   let result = "PASS";
@@ -235,7 +270,10 @@ function linkBudget(freqMHz, distanceKm) {
     rxPower,
     fadeMargin,
     result,
-    cls
+    cls,
+    mimoLabel: mimo.mimoLabel,
+    txEnhance: mimo.txEnhance,
+    rxEnhance: mimo.rxEnhance
   };
 }
 
@@ -326,22 +364,26 @@ async function analyze() {
       {
         label: "DEM Terrain / Sea Level",
         data: terrain,
-        borderWidth: 2,
+        borderWidth: 2.5,
         pointRadius: 0,
-        fill: true
+        fill: true,
+        borderColor: "#6B3A00",
+        backgroundColor: "rgba(200, 167, 122, 0.35)"
       },
       {
         label: "LOS Line",
         data: los,
         borderWidth: 2,
-        pointRadius: 0
+        pointRadius: 0,
+        borderColor: "#1E63C6"
       },
       {
         label: "Terrain + Earth Curvature",
         data: curved,
         borderWidth: 2,
         pointRadius: 0,
-        borderDash: [5, 5]
+        borderDash: [5, 5],
+        borderColor: "#444444"
       }
     ];
 
@@ -429,6 +471,8 @@ async function analyze() {
       <div class="item"><b>AP Ground Elev</b>${apGround.toFixed(1)} m</div>
       <div class="item"><b>Worst Clearance</b>${worst.toFixed(2)} m @ ${worstF} MHz</div>
       <div class="item"><b>Worst Obstruction</b>${labels[worstIndex]} km from STA</div>
+      <div class="item"><b>MIMO Type</b>${document.getElementById("mimoType").value} for 2.4G/5G</div>
+      <div class="item"><b>Single Path TX/RX</b>${document.getElementById("txPowerDbm").value} dBm / ${document.getElementById("rxSensitivityDbm").value} dBm</div>
       <div class="item"><b>STA Ant Elev</b>${staAnt.toFixed(1)} m</div>
       <div class="item"><b>AP Ant Elev</b>${apAnt.toFixed(1)} m</div>
       <div class="item"><b>DEM Samples</b>${N}</div>
@@ -441,6 +485,9 @@ async function analyze() {
         <td>${r.mid60.toFixed(2)} m</td>
         <td>${r.min.toFixed(2)} m</td>
         <td><span class="${r.res === "PASS" ? "pass" : "fail"}">${r.res}</span></td>
+        <td>${r.budget.mimoLabel}</td>
+        <td>${r.budget.txEnhance.toFixed(2)} dB</td>
+        <td>${r.budget.rxEnhance.toFixed(2)} dB</td>
         <td>${r.budget.fspl.toFixed(2)} dB</td>
         <td>${r.budget.rxPower.toFixed(2)} dBm</td>
         <td>${r.budget.fadeMargin.toFixed(2)} dB</td>
@@ -519,7 +566,7 @@ async function analyze() {
     });
 
     redrawMap();
-    setBusy(false, "完成。已產生 Worst Obstruction / Link Budget / Smart Height Recommendation。");
+    setBusy(false, "完成。已產生 MIMO Link Budget / Worst Obstruction / Smart Height Recommendation。");
   } catch (err) {
     setBusy(false, "");
     alert("分析失敗：" + err.message);

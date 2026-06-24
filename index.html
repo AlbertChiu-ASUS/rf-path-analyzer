@@ -10,10 +10,10 @@
 <body>
 <div class="container">
   <div class="card">
-    <h1>RF Path Analyzer <span>GitHub Pages V5.5 Professional</span></h1>
+    <h1>RF Path Analyzer <span>GitHub Pages V5.6 MIMO Link Budget</span></h1>
     <p class="note">
       第一個座標點為 <b>STA</b>，第二個座標點為 <b>AP</b>。
-      這版會透過 Open‑Meteo Elevation API 取得路徑高程，並加入 Worst Obstruction 與 Link Budget。
+      這版加入 MIMO 型態、Single Path TX/RX 標示、TX/RX Enhance 計算，並優化 Link Budget 介面。
     </p>
 
     <div id="map"></div>
@@ -88,35 +88,46 @@
     <input id="customFreqs" placeholder="1200, 5800">
 
     <h2>Link Budget</h2>
-    <div class="grid4">
+    <div class="budget-compact">
       <div>
-        <label>TX Power dBm</label>
+        <label>TX Power dBm <span class="hint">(Single Path)</span></label>
         <input id="txPowerDbm" type="number" value="20" step="0.1">
       </div>
       <div>
+        <label>RX Sensitivity dBm <span class="hint">(Single Path)</span></label>
+        <input id="rxSensitivityDbm" type="number" value="-95" step="0.1">
+      </div>
+      <div>
+        <label>MIMO Type <span class="hint">(2.4G/5G only)</span></label>
+        <select id="mimoType">
+          <option value="1x1" selected>1x1</option>
+          <option value="1x2">1x2</option>
+          <option value="1x4">1x4</option>
+          <option value="2x2">2x2</option>
+          <option value="2x4">2x4</option>
+        </select>
+      </div>
+      <div>
         <label>STA Ant Gain dBi</label>
-        <input id="staAntGainDbi" type="number" value="8" step="0.1">
+        <input id="staAntGainDbi" type="number" value="0" step="0.1">
       </div>
       <div>
         <label>AP Ant Gain dBi</label>
-        <input id="apAntGainDbi" type="number" value="8" step="0.1">
+        <input id="apAntGainDbi" type="number" value="0" step="0.1">
       </div>
       <div>
         <label>Total Cable Loss dB</label>
-        <input id="cableLossDb" type="number" value="2" step="0.1">
-      </div>
-    </div>
-
-    <div class="grid2">
-      <div>
-        <label>RX Sensitivity dBm</label>
-        <input id="rxSensitivityDbm" type="number" value="-95" step="0.1">
+        <input id="cableLossDb" type="number" value="0" step="0.1">
       </div>
       <div>
         <label>Fade Margin Target dB</label>
         <input id="fadeMarginTargetDb" type="number" value="10" step="0.1">
       </div>
     </div>
+    <p class="note small-note">
+      TX Power / RX Sensitivity 以 single path 單路徑規格輸入；MIMO Type 只套用於 2400 / 5825 MHz，其餘頻段固定視為 1x1。
+      SS=1 / MCS0 長距離模式下，工具以 10log10(TX chains) / 10log10(RX chains) 估算 TX/RX enhance。
+    </p>
 
     <button id="analyzeBtn" onclick="analyze()">Analyze</button>
     <button class="secondary" onclick="clearMapPoints()">Clear Map Points</button>
@@ -136,6 +147,9 @@
         <th>60% Fresnel @ midpoint</th>
         <th>Min Clearance</th>
         <th>Fresnel Result</th>
+        <th>MIMO</th>
+        <th>TX Enhance</th>
+        <th>RX Enhance</th>
         <th>FSPL</th>
         <th>RX Power</th>
         <th>Fade Margin</th>

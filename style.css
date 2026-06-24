@@ -248,3 +248,39 @@ canvas {
   color: #cc0000;
   font-weight: 800;
 }
+
+
+.budget-compact {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.budget-compact label {
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.hint {
+  color: #666;
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.small-note {
+  font-size: 13px;
+  margin-top: 0;
+}
+
+@media(max-width:1100px) {
+  .budget-compact {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media(max-width:700px) {
+  .budget-compact {
+    grid-template-columns: 1fr;
+  }
+}
