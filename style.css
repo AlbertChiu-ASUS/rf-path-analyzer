@@ -232,3 +232,19 @@ canvas {
     grid-template-columns: 1fr;
   }
 }
+
+
+.budget-pass {
+  color: #008000;
+  font-weight: 800;
+}
+
+.budget-warn {
+  color: #d97706;
+  font-weight: 800;
+}
+
+.budget-fail {
+  color: #cc0000;
+  font-weight: 800;
+}

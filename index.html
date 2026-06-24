@@ -10,10 +10,10 @@
 <body>
 <div class="container">
   <div class="card">
-    <h1>RF Path Analyzer <span>GitHub Pages V5.1 Smart Height</span></h1>
+    <h1>RF Path Analyzer <span>GitHub Pages V5.5 Professional</span></h1>
     <p class="note">
       第一個座標點為 <b>STA</b>，第二個座標點為 <b>AP</b>。
-      這版會透過 Open‑Meteo Elevation API 取得路徑高程，並自動建議 STA/AP 天線需加高多少。
+      這版會透過 Open‑Meteo Elevation API 取得路徑高程，並加入 Worst Obstruction 與 Link Budget。
     </p>
 
     <div id="map"></div>
@@ -87,6 +87,37 @@
     <label>Custom Frequencies MHz，可輸入多個，例如：1200, 5800</label>
     <input id="customFreqs" placeholder="1200, 5800">
 
+    <h2>Link Budget</h2>
+    <div class="grid4">
+      <div>
+        <label>TX Power dBm</label>
+        <input id="txPowerDbm" type="number" value="20" step="0.1">
+      </div>
+      <div>
+        <label>STA Ant Gain dBi</label>
+        <input id="staAntGainDbi" type="number" value="8" step="0.1">
+      </div>
+      <div>
+        <label>AP Ant Gain dBi</label>
+        <input id="apAntGainDbi" type="number" value="8" step="0.1">
+      </div>
+      <div>
+        <label>Total Cable Loss dB</label>
+        <input id="cableLossDb" type="number" value="2" step="0.1">
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div>
+        <label>RX Sensitivity dBm</label>
+        <input id="rxSensitivityDbm" type="number" value="-95" step="0.1">
+      </div>
+      <div>
+        <label>Fade Margin Target dB</label>
+        <input id="fadeMarginTargetDb" type="number" value="10" step="0.1">
+      </div>
+    </div>
+
     <button id="analyzeBtn" onclick="analyze()">Analyze</button>
     <button class="secondary" onclick="clearMapPoints()">Clear Map Points</button>
     <div id="status" class="status"></div>
@@ -104,7 +135,11 @@
         <th>1st Fresnel Radius @ midpoint</th>
         <th>60% Fresnel @ midpoint</th>
         <th>Min Clearance</th>
-        <th>Result</th>
+        <th>Fresnel Result</th>
+        <th>FSPL</th>
+        <th>RX Power</th>
+        <th>Fade Margin</th>
+        <th>Budget Result</th>
       </tr>
       </thead>
       <tbody id="freqTable"></tbody>

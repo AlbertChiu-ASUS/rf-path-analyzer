@@ -202,6 +202,43 @@ function setBusy(isBusy, msg = "") {
 }
 
 
+function fsplDb(freqMHz, distanceKm) {
+  if (freqMHz <= 0 || distanceKm <= 0) return 0;
+  return 32.44 + 20 * Math.log10(distanceKm) + 20 * Math.log10(freqMHz);
+}
+
+function linkBudget(freqMHz, distanceKm) {
+  const txPower = parseFloat(document.getElementById("txPowerDbm").value);
+  const staGain = parseFloat(document.getElementById("staAntGainDbi").value);
+  const apGain = parseFloat(document.getElementById("apAntGainDbi").value);
+  const cableLoss = parseFloat(document.getElementById("cableLossDb").value);
+  const rxSensitivity = parseFloat(document.getElementById("rxSensitivityDbm").value);
+  const targetMargin = parseFloat(document.getElementById("fadeMarginTargetDb").value);
+
+  const fspl = fsplDb(freqMHz, distanceKm);
+  const rxPower = txPower + staGain + apGain - cableLoss - fspl;
+  const fadeMargin = rxPower - rxSensitivity;
+
+  let result = "PASS";
+  let cls = "budget-pass";
+
+  if (fadeMargin < 0) {
+    result = "FAIL";
+    cls = "budget-fail";
+  } else if (fadeMargin < targetMargin) {
+    result = "MARGINAL";
+    cls = "budget-warn";
+  }
+
+  return {
+    fspl,
+    rxPower,
+    fadeMargin,
+    result,
+    cls
+  };
+}
+
 function calculateSmartHeightRecommendation(rows) {
   // rows contain min clearance for each frequency.
   // If worst clearance >= 0, no extra height needed.
@@ -312,10 +349,13 @@ async function analyze() {
     let overall = true;
     let worst = null;
     let worstF = null;
+    let worstIndex = 0;
+    let worstLowerEdge = null;
 
     freqs.forEach(freq => {
       let lower = [];
       let min = Infinity;
+      let minIndex = 0;
 
       for (let i = 0; i < N; i++) {
         const t = i / (N - 1);
@@ -329,6 +369,7 @@ async function analyze() {
 
         if (clearance < min) {
           min = clearance;
+          minIndex = i;
         }
       }
 
@@ -340,6 +381,8 @@ async function analyze() {
       if (worst === null || min < worst) {
         worst = min;
         worstF = freq;
+        worstIndex = minIndex;
+        worstLowerEdge = lower[minIndex];
       }
 
       datasets.push({
@@ -350,14 +393,30 @@ async function analyze() {
         borderDash: [8, 4]
       });
 
+      const budget = linkBudget(freq, D);
+
       rows.push({
         freq,
         mid,
         mid60: mid * 0.6,
         min,
-        res
+        res,
+        budget
       });
     });
+
+    const worstMarkerData = new Array(N).fill(null);
+    if (worstIndex !== null && worstLowerEdge !== null) {
+      worstMarkerData[worstIndex] = worstLowerEdge;
+      datasets.push({
+        label: `Worst Obstruction @ ${labels[worstIndex]} km`,
+        data: worstMarkerData,
+        borderWidth: 0,
+        pointRadius: 7,
+        pointHoverRadius: 9,
+        showLine: false
+      });
+    }
 
     document.getElementById("resultCard").style.display = "block";
     document.getElementById("chartCard").style.display = "block";
@@ -369,6 +428,7 @@ async function analyze() {
       <div class="item"><b>STA Ground Elev</b>${staGround.toFixed(1)} m</div>
       <div class="item"><b>AP Ground Elev</b>${apGround.toFixed(1)} m</div>
       <div class="item"><b>Worst Clearance</b>${worst.toFixed(2)} m @ ${worstF} MHz</div>
+      <div class="item"><b>Worst Obstruction</b>${labels[worstIndex]} km from STA</div>
       <div class="item"><b>STA Ant Elev</b>${staAnt.toFixed(1)} m</div>
       <div class="item"><b>AP Ant Elev</b>${apAnt.toFixed(1)} m</div>
       <div class="item"><b>DEM Samples</b>${N}</div>
@@ -381,6 +441,10 @@ async function analyze() {
         <td>${r.mid60.toFixed(2)} m</td>
         <td>${r.min.toFixed(2)} m</td>
         <td><span class="${r.res === "PASS" ? "pass" : "fail"}">${r.res}</span></td>
+        <td>${r.budget.fspl.toFixed(2)} dB</td>
+        <td>${r.budget.rxPower.toFixed(2)} dBm</td>
+        <td>${r.budget.fadeMargin.toFixed(2)} dB</td>
+        <td><span class="${r.budget.cls}">${r.budget.result}</span></td>
       </tr>
     `).join("");
 
@@ -455,7 +519,7 @@ async function analyze() {
     });
 
     redrawMap();
-    setBusy(false, "完成。已產生 Smart Height Recommendation。");
+    setBusy(false, "完成。已產生 Worst Obstruction / Link Budget / Smart Height Recommendation。");
   } catch (err) {
     setBusy(false, "");
     alert("分析失敗：" + err.message);
